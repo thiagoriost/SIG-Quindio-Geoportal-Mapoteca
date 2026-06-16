@@ -29,15 +29,6 @@ export const categories = [
     description: 'Cartografía general, límites, planchas y mapas base.',
   },
   {
-    id: 'educacion',
-    label: 'Educación',
-    shortLabel: 'Educación',
-    folder: 'EDUCACION/',
-    icon: 'GraduationCap',
-    color: 'teal',
-    description: 'Infraestructura educativa, cobertura y sedes.',
-  },
-  {
     id: 'gestion-riesgo',
     label: 'Gestión del Riesgo',
     shortLabel: 'Riesgos',
@@ -47,15 +38,6 @@ export const categories = [
     description: 'Amenazas, vulnerabilidad, riesgo y gestión preventiva.',
   },
   {
-    id: 'industria-comercio',
-    label: 'Industria y Comercio',
-    shortLabel: 'Industria',
-    folder: 'INDUSTRIA_COMERCIO/',
-    icon: 'Factory',
-    color: 'slate',
-    description: 'Actividad económica, industria, comercio y servicios.',
-  },
-  {
     id: 'ordenamiento-territorial',
     label: 'Ordenamiento Territorial',
     shortLabel: 'Ordenamiento',
@@ -63,15 +45,6 @@ export const categories = [
     icon: 'Landmark',
     color: 'lime',
     description: 'Usos del suelo, normativa, instrumentos y planificación territorial.',
-  },
-  {
-    id: 'salud',
-    label: 'Salud',
-    shortLabel: 'Salud',
-    folder: 'SALUD/',
-    icon: 'HeartPulse',
-    color: 'red',
-    description: 'Equipamientos, cobertura y servicios de salud.',
   },
   {
     id: 'socioeconomico',

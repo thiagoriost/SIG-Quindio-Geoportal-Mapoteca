@@ -57,8 +57,8 @@ export default function Home({ onNavigate }) {
           />
           <ToolCard
             icon={<BarChart3 />}
-            title="Administrador"
-            text="Visualiza administrador de servicios."
+            title="Módulo de Administración"
+            text="Visualiza  módulo de administración del sistema."
             action="Ver administrador"
             onClick={() => {
               console.log({ADMIN_URL})
@@ -83,7 +83,7 @@ export default function Home({ onNavigate }) {
         </div>
         <div>
           <Globe2 />
-          <strong>1.845 km²</strong>
+          <strong>1.943 km²</strong>
           <span>Extensión territorial</span>
         </div>
         {/* <div>
