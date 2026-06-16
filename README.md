@@ -26,6 +26,14 @@ Abrir:
 http://localhost:5173
 ```
 
+## Documentacion de despliegue
+
+La guia para despliegue y puesta en marcha en produccion se encuentra en:
+
+```text
+MANUAL_INSTALACION_PRODUCCION.md
+```
+
 ## Importante sobre CORS
 
 El demo intenta leer estas carpetas públicas:
