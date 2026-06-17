@@ -1,9 +1,8 @@
 import { categories, getCategoryUrl } from '../data/categories.js'
 import { fallbackPdfs } from '../data/fallbackPdfs.js'
 
-const MAPOTECA_PUBLIC_ORIGIN = 'https://sigquindio.gov.co'
-const MAPOTECA_API_BASE =
-  import.meta.env.VITE_MAPOTECA_API_BASE?.trim() || 'http://localhost:3000/api/v1/mapoteca'
+const MAPOTECA_PUBLIC_ORIGIN = import.meta.env.VITE_MAPOTECA_PUBLIC_ORIGIN?.trim()
+const MAPOTECA_API_BASE = import.meta.env.VITE_MAPOTECA_API_BASE?.trim()
 
 /**
  * @typedef {Object} MapotecaPdf
