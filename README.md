@@ -26,6 +26,43 @@ Abrir:
 http://localhost:5173
 ```
 
+## Variables de entorno (.env)
+
+La app centraliza los apuntamientos en variables `VITE_` para Vite.
+
+Archivos incluidos:
+
+```text
+.env.example
+.env.development
+.env.production
+```
+
+Variables:
+
+```text
+VITE_MAPOTECA_PUBLIC_ORIGIN
+VITE_MAPOTECA_API_BASE
+```
+
+Valores recomendados:
+
+```text
+# Desarrollo
+VITE_MAPOTECA_PUBLIC_ORIGIN=https://sigquindio.gov.co
+VITE_MAPOTECA_API_BASE=http://localhost:3000/api/v1/mapoteca
+
+# Produccion (mismo dominio)
+VITE_MAPOTECA_PUBLIC_ORIGIN=https://sigquindio.gov.co
+VITE_MAPOTECA_API_BASE=/api/v1/mapoteca
+```
+
+Notas:
+
+- Vite inyecta estas variables en tiempo de compilacion.
+- Si cambias un valor de `.env`, debes reiniciar `npm run dev` o reconstruir para produccion.
+- `.env.example` se versiona como plantilla; los `.env*` reales se ignoran en git.
+
 ## Documentacion de despliegue
 
 La guia para despliegue y puesta en marcha en produccion se encuentra en:

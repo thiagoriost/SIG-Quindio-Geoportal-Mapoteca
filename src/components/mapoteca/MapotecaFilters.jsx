@@ -1,15 +1,39 @@
 import { Search, SlidersHorizontal } from 'lucide-react'
 
+/**
+ * Panel de filtros para el catalogo de mapoteca.
+ *
+ * @param {{
+ *   query: string,
+ *   setQuery: (value: string) => void,
+ *   filters: { category: string, municipio: string, escala: string, year: string, format: string },
+ *   setFilters: (updater: (current: any) => any) => void,
+ *   categories: Array<{ id: string, label: string }>,
+ *   municipios: string[],
+ *   years: string[],
+ *   scales: string[],
+ *   onClear: () => void,
+ * }} props Propiedades del componente.
+ * @returns {JSX.Element} Controles de busqueda y filtros.
+ */
 export default function MapotecaFilters({
   query,
   setQuery,
   filters,
   setFilters,
+  categories,
   municipios,
   years,
   scales,
   onClear,
 }) {
+  /**
+   * Actualiza un campo puntual de los filtros.
+   *
+   * @param {string} field Nombre del campo.
+   * @param {string} value Valor seleccionado.
+   * @returns {void}
+   */
   const update = (field, value) => {
     setFilters((current) => ({
       ...current,
@@ -40,15 +64,9 @@ export default function MapotecaFilters({
           <span>Categoría</span>
           <select value={filters.category} onChange={(event) => update('category', event.target.value)}>
             <option value="all">Todas</option>
-            <option value="agropecuario">Agropecuario</option>
-            <option value="ambiental">Ambiental</option>
-            <option value="cartografia-basica">Cartografía Básica</option>
-            <option value="educacion">Educación</option>
-            <option value="gestion-riesgo">Gestión del Riesgo</option>
-            <option value="industria-comercio">Industria y Comercio</option>
-            <option value="ordenamiento-territorial">Ordenamiento Territorial</option>
-            <option value="salud">Salud</option>
-            <option value="socioeconomico">Socioeconómico</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.label}</option>
+            ))}
           </select>
         </label>
 

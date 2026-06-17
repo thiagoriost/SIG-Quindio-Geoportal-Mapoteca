@@ -1,2 +1,7 @@
 # Ignorar carpetas principales
 node_modules/*
+
+# Ignorar variables de entorno locales/secretas
+.env
+.env.*
+.env.example

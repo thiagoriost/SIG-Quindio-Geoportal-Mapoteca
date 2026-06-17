@@ -8,9 +8,10 @@ export default function HeroActions({ onNavigate }) {
         <MapPinned size={24} />
         <span>
           <strong>Visor Geográfico</strong>
-          <small>Explorar mapas</small>
+          <small>Explorar visor</small>
         </span>
       </button>
+      
 
       <button className="hero-action" onClick={() => onNavigate('mapoteca')}>
         <FileText size={24} />
@@ -24,7 +25,7 @@ export default function HeroActions({ onNavigate }) {
         <FolderDot size={24} />
         <span>
           <strong>Administrador</strong>
-          <small>Servicios</small>
+          <small>Administración</small>
         </span>
       </button>
     </div>
