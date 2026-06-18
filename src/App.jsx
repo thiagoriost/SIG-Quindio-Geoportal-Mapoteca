@@ -9,7 +9,7 @@ export default function App() {
   const [page, setPage] = useState('home')
 
   const navigate = (nextPage) => {
-    console.log({nextPage})
+    // console.log({nextPage})
     setPage(nextPage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }

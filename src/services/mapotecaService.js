@@ -365,7 +365,7 @@ function mapApiDocumentToPdf(apiDocument, tematica) {
   const fileName = String(apiDocument.nombreArchivo || apiDocument.fileName || apiDocument.nombre || '')
   const title = String(apiDocument.titulo || apiDocument.title || titleFromFileName(fileName) || 'Documento')
   const format = String(apiDocument.tipo || apiDocument.mimeType || 'application/pdf')
-  const yearValue = String(apiDocument.anio || apiDocument.year || inferYearFromFileName(fileName || title))
+  const yearValue = String(apiDocument.anio || apiDocument.year || inferYearFromFileName(apiDocument.fechaCarga))
 
   const pdf = {
     id: documentId || `${category.id}-${fileName || title}`,
@@ -383,7 +383,7 @@ function mapApiDocumentToPdf(apiDocument, tematica) {
       apiDocument.enlace ||
       (documentId ? buildDocumentDownloadUrl(documentId) : '#')
   }
-  console.log({pdf})
+  // console.log({pdf})
   return pdf
 }
 

@@ -29,9 +29,9 @@ export default function PdfCard({ pdf, isApiConnected, onPreview }) {
         <h3>{pdf.title}</h3>
 
         <div className="map-metadata">
-          <span>Escala: {pdf.escala}</span>
+          {/* <span>Escala: {pdf.escala}</span> */}
           <span>Año: {pdf.year}</span>
-          <span>{pdf.municipio}</span>
+          {/* <span>{pdf.municipio}</span> */}
         </div>
 
         <div className="map-card-actions">
