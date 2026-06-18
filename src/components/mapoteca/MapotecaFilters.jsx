@@ -70,7 +70,7 @@ export default function MapotecaFilters({
           </select>
         </label>
 
-        <label>
+        {/* <label>
           <span>Municipio</span>
           <select value={filters.municipio} onChange={(event) => update('municipio', event.target.value)}>
             <option value="all">Todos</option>
@@ -88,7 +88,7 @@ export default function MapotecaFilters({
               <option key={item} value={item}>{item}</option>
             ))}
           </select>
-        </label>
+        </label> */}
 
         <label>
           <span>Año</span>

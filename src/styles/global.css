@@ -418,19 +418,21 @@ a {
   align-items: center;
   padding: 54px 5vw;
   overflow: hidden;
-  /* background:
-    radial-gradient(circle at 88% 43%, rgba(163, 38, 38, 0.42), transparent 11%),
-    radial-gradient(circle at 79% 70%, rgba(213,161,30,0.5), transparent 12%),
-    linear-gradient(90deg, #eef7eb, #ffffff 55%, #d7ead0); */
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
+    url('../assets/images/Fondo-incio-SIG-Quindio (2).jpg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 .mapoteca-banner::before {
   content: "";
   position: absolute;
   inset: 0;
-  /* background:
-    radial-gradient(circle at 12% 70%, rgba(35,107,47,0.18), transparent 16%),
-    radial-gradient(circle at 18% 50%, rgba(35,107,47,0.14), transparent 10%); */
+  background:
+    radial-gradient(circle at 12% 70%, rgba(35, 107, 47, 0.14), transparent 16%),
+    radial-gradient(circle at 18% 50%, rgba(35, 107, 47, 0.1), transparent 10%);
 }
 
 .mapoteca-banner-content {
@@ -518,7 +520,7 @@ a {
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr) auto;
+  grid-template-columns: repeat(4, 1fr) auto;
   gap: 14px;
   align-items: end;
 }
