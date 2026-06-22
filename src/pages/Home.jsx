@@ -61,7 +61,6 @@ export default function Home({ onNavigate }) {
             text="Visualiza  módulo de administración del sistema."
             action="Ver administrador"
             onClick={() => {
-              console.log({ADMIN_URL})
               window.open(ADMIN_URL, '_blank', 'noopener,noreferrer')
             }}
           />
