@@ -1,5 +1,6 @@
 import { categories, getCategoryUrl } from '../data/categories.js'
 import { fallbackPdfs } from '../data/fallbackPdfs.js'
+import { validaLoggerLocalStorage } from '../utils/utilities.js'
 
 const MAPOTECA_PUBLIC_ORIGIN = import.meta.env.VITE_MAPOTECA_PUBLIC_ORIGIN?.trim()
 const MAPOTECA_API_BASE = import.meta.env.VITE_MAPOTECA_API_BASE?.trim()
@@ -179,9 +180,10 @@ function categoryIdFromLabel(label) {
  * @param {string} label Etiqueta de tematica.
  * @returns {{ id: string, label: string }} Categoria utilizable en la UI.
  */
-function mapCategoryFromApi(label) {
+export function mapCategoryFromApi(label) {
   const normalized = normalizeText(label)
   const localMatch = categories.find((category) => normalizeText(category.label) === normalized)
+  if (validaLoggerLocalStorage('logger')) console.log("mapCategoryFromApi",{ label, normalized, localMatch })
 
   if (localMatch) {
     return {
@@ -215,7 +217,7 @@ function hasInternetConnection() {
  * @param {unknown} payload Respuesta JSON de API.
  * @returns {any[]} Arreglo de documentos.
  */
-function extractDocuments(payload) {
+export function extractDocuments(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.content)) return payload.content
   if (Array.isArray(payload?.data)) return payload.data
@@ -269,7 +271,7 @@ function normalizeTematicas(values) {
  *
  * @returns {Promise<string[]>} Etiquetas de tematicas.
  */
-async function fetchApiTematicas() {
+export async function fetchApiTematicas() {
   const response = await fetch(`${MAPOTECA_API_BASE}/tematicas`, {
     method: 'GET',
     headers: {
@@ -277,6 +279,7 @@ async function fetchApiTematicas() {
     },
   })
 
+  if (validaLoggerLocalStorage('logger')) console.log("[mapoteca] fetchApiTematicas response", { status: response.status, ok: response.ok, url: response.url, urlFetch:`${MAPOTECA_API_BASE}/tematicas` })
   if (!response.ok) {
     throw new Error('No fue posible consultar las tematicas de la API')
   }
@@ -284,7 +287,7 @@ async function fetchApiTematicas() {
   const payload = await response.json()
 
   // Temporal: inspeccion rapida de la forma de respuesta del backend.
-  console.debug('[mapoteca] /tematicas payload shape', {
+  if (validaLoggerLocalStorage('logger')) console.log('[mapoteca] /tematicas payload shape', {
     isArray: Array.isArray(payload),
     topLevelKeys: payload && typeof payload === 'object' ? Object.keys(payload) : [],
     sample:
@@ -299,23 +302,23 @@ async function fetchApiTematicas() {
 
   if (Array.isArray(payload)) {
     const tematicas = normalizeTematicas(payload)
-    console.debug('[mapoteca] tematicas normalizadas', tematicas)
+    if (validaLoggerLocalStorage('logger')) console.log('[mapoteca] tematicas normalizadas 1111', tematicas)
     return tematicas
   }
 
   if (Array.isArray(payload?.data)) {
     const tematicas = normalizeTematicas(payload.data)
-    console.debug('[mapoteca] tematicas normalizadas', tematicas)
+    if (validaLoggerLocalStorage('logger')) console.log('[mapoteca] tematicas normalizadas 2222', tematicas)
     return tematicas
   }
 
   if (Array.isArray(payload?.tematicas)) {
     const tematicas = normalizeTematicas(payload.tematicas)
-    console.debug('[mapoteca] tematicas normalizadas', tematicas)
+    if (validaLoggerLocalStorage('logger')) console.log('[mapoteca] tematicas normalizadas 3333', tematicas)
     return tematicas
   }
 
-  console.debug('[mapoteca] tematicas normalizadas', [])
+  if (validaLoggerLocalStorage('logger')) console.log('[mapoteca] tematicas normalizadas 4444', [])
 
   return []
 }
@@ -326,20 +329,22 @@ async function fetchApiTematicas() {
  * @param {string} tematica Nombre de la tematica.
  * @returns {Promise<any[]>} Documentos retornados por API.
  */
-async function fetchApiDocumentosByTematica(tematica) {
+export async function fetchApiDocumentosByTematica(tematica) {
   const endpoint = new URL(`${MAPOTECA_API_BASE}/documentos`)
   endpoint.searchParams.set('tematica', tematica)
   endpoint.searchParams.set('page', '1')
   endpoint.searchParams.set('size', '100')
   endpoint.searchParams.set('sort', 'titulo')
   endpoint.searchParams.set('direction', 'asc')
-
+  if (validaLoggerLocalStorage('logger')) console.log("[mapoteca] fetchApiDocumentosByTematica endpoint", { tematica, url: endpoint.href, urlFetch:`${MAPOTECA_API_BASE}/documentos?tematica=${encodeURIComponent(tematica)}&page=1&size=100&sort=titulo&direction=asc` })
   const response = await fetch(endpoint.href, {
     method: 'GET',
     headers: {
       Accept: 'application/json',
     },
   })
+
+  if (validaLoggerLocalStorage('logger')) console.log("[mapoteca] fetchApiDocumentosByTematica response", { status: response.status, ok: response.ok, url: response.url, urlFetch:`${MAPOTECA_API_BASE}/documentos?tematica=${encodeURIComponent(tematica)}&page=1&size=100&sort=titulo&direction=asc` })
 
   if (!response.ok) {
     throw new Error(`No fue posible consultar documentos para la tematica ${tematica}`)
@@ -356,7 +361,7 @@ async function fetchApiDocumentosByTematica(tematica) {
  * @param {string} tematica Tematica que origina la consulta.
  * @returns {MapotecaPdf} Documento normalizado.
  */
-function mapApiDocumentToPdf(apiDocument, tematica) {
+export function mapApiDocumentToPdf(apiDocument, tematica) {
   const category = mapCategoryFromApi(
     apiDocument.tematica || apiDocument.categoria || apiDocument.tema || tematica,
   )
@@ -392,13 +397,13 @@ function mapApiDocumentToPdf(apiDocument, tematica) {
  *
  * @returns {Promise<MapotecaLoadResult>} Resultado de carga por API.
  */
-async function loadMapotecaPdfsFromApi() {
+export async function loadMapotecaPdfsFromApi() {
+
   const tematicas = await fetchApiTematicas()
-
+  if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi333",{ tematicas })
   if (tematicas.length === 0) {
-    throw new Error('La API no retorno tematicas')
+    console.error('La API no retorno tematicas')
   }
-
   const responses = await Promise.allSettled(
     tematicas.map(async (tematica) => {
       const documentos = await fetchApiDocumentosByTematica(tematica)
@@ -426,7 +431,8 @@ async function loadMapotecaPdfsFromApi() {
   if (pdfs.length === 0) {
     throw new Error('La API no retorno documentos')
   }
-
+    
+  if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi4444",{ tematicas, responses, pdfs, errors })
   return {
     pdfs,
     errors,
@@ -463,8 +469,8 @@ export async function loadPdfsFromDirectory(category) {
     .map((link) => link.getAttribute('href') || '')
     .map(cleanHref)
     .filter(isPdf)
-
-  return pdfLinks.map((fileName) => {
+  
+  const mapPdfsLink = pdfLinks.map((fileName) => {
     const decodedFile = safeDecode(fileName)
     const pdf = {
       id: `${category.id}-${decodedFile}`,
@@ -478,9 +484,11 @@ export async function loadPdfsFromDirectory(category) {
       format: 'PDF',
       url: buildPdfUrl(fileName, publicFolderUrl),
     }
-    console.log({pdf})
     return pdf
   })
+  
+  if (validaLoggerLocalStorage('logger')) console.log("loadPdfsFromDirectory",{ mapPdfsLink })
+  return mapPdfsLink
 }
 
 /**
@@ -495,17 +503,19 @@ export async function loadPdfsFromDirectory(category) {
  */
 export async function loadMapotecaPdfs() {
   const errors = []
-
-  if (hasInternetConnection()) {
+  if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfs111",{ hasInternetConnection: hasInternetConnection() })
+  // if (hasInternetConnection()) {
     try {
-      return await loadMapotecaPdfsFromApi()
+      const resultPdfsFromApi = await loadMapotecaPdfsFromApi()
+      if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi222",{ resultPdfsFromApi })
+      return resultPdfsFromApi
     } catch (error) {
       errors.push({
         message: error?.message || 'No fue posible cargar datos desde la API',
       })
     }
-  }
-
+  // }
+/* 
   const responses = await Promise.allSettled(
     categories.map(async (category) => {
       const pdfs = await loadPdfsFromDirectory(category)
@@ -516,6 +526,7 @@ export async function loadMapotecaPdfs() {
   const pdfs = responses.flatMap((response) =>
     response.status === 'fulfilled' ? response.value.pdfs : [],
   )
+  if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfs",{ responses, pdfs })
 
   const directoryErrors = responses
     .map((response, index) => {
@@ -544,5 +555,5 @@ export async function loadMapotecaPdfs() {
     errors,
     usingFallback: false,
     source: 'legacy-directories',
-  }
+  } */
 }

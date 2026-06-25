@@ -5,12 +5,13 @@ import MapotecaFilters from '../components/mapoteca/MapotecaFilters.jsx'
 import PdfCard from '../components/mapoteca/PdfCard.jsx'
 import PdfViewerModal from '../components/mapoteca/PdfViewerModal.jsx'
 import { categories, getCategoryById } from '../data/categories.js'
-import { loadMapotecaPdfs } from '../services/mapotecaService.js'
+import { fetchApiTematicas, mapCategoryFromApi, extractDocuments, mapApiDocumentToPdf } from '../services/mapotecaService.js'
+import { validaLoggerLocalStorage } from '../utils/utilities.js'
+
+const MAPOTECA_API_BASE = import.meta.env.VITE_MAPOTECA_API_BASE?.trim()
 
 /**
  * Estado inicial de filtros de la mapoteca.
- *
- * @type {{ category: string, municipio: string, escala: string, year: string, format: string }}
  */
 const initialFilters = {
   category: 'all',
@@ -22,10 +23,6 @@ const initialFilters = {
 
 /**
  * Obtiene valores unicos de un campo para construir opciones de filtro.
- *
- * @param {Array<Record<string, any>>} items Lista de elementos.
- * @param {string} field Campo objetivo.
- * @returns {string[]} Valores unicos ordenados.
  */
 function uniqueValues(items, field) {
   return [...new Set(items.map((item) => item[field]).filter(Boolean))]
@@ -35,9 +32,6 @@ function uniqueValues(items, field) {
 
 /**
  * Mapea categorias a partir de los documentos disponibles para soporte de tematicas API.
- *
- * @param {Array<{ categoryId: string, categoryLabel: string }>} pdfItems Lista de documentos.
- * @returns {Array<{ id: string, label: string, shortLabel: string, description: string, icon: string }>} Categorias normalizadas.
  */
 function deriveCategoriesFromPdfs(pdfItems) {
   const categoryMap = new Map()
@@ -58,15 +52,10 @@ function deriveCategoriesFromPdfs(pdfItems) {
       icon: localCategory?.icon || 'FileText',
     })
   })
-
+  if (validaLoggerLocalStorage('logger')) console.log("deriveCategoriesFromPdfs", { categories: [...categoryMap.values()] })
   return [...categoryMap.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
-/**
- * Componente principal de mapoteca con soporte online/offline.
- *
- * @returns {JSX.Element} Pagina de mapoteca.
- */
 export default function Mapoteca() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [query, setQuery] = useState('')
@@ -77,35 +66,116 @@ export default function Mapoteca() {
   const [dataSource, setDataSource] = useState('legacy-directories')
   const [selectedPdf, setSelectedPdf] = useState(null)
 
+  async function fetchApiDocumentosByTematica(tematica) {
+    const endpoint = new URL(`${MAPOTECA_API_BASE}/documentos`)
+    endpoint.searchParams.set('tematica', tematica)
+    endpoint.searchParams.set('page', '1')
+    endpoint.searchParams.set('size', '100')
+    endpoint.searchParams.set('sort', 'titulo')
+    endpoint.searchParams.set('direction', 'asc')
+    
+    if (validaLoggerLocalStorage('logger')) {
+      console.log("[mapoteca] fetchApiDocumentosByTematica endpoint", { tematica, url: endpoint.href })
+    }
+    
+    const response = await fetch(endpoint.href, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+  
+    if (!response.ok) {
+      throw new Error(`No fue posible consultar documentos para la tematica ${tematica}`)
+    }
+  
+    const payload = await response.json()
+    const documents = extractDocuments(payload)
+    return documents
+  }
+
+  const loadMapotecaPdfsFromApi = async () => {
+    try {
+      const tematicas = await fetchApiTematicas()
+      if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi - Temáticas", { tematicas })
+      
+      if (!tematicas || tematicas.length === 0) {
+        console.error('La API no retornó temáticas')
+        throw new Error('La API no retornó temáticas')
+      }
+
+      // Creamos un mapeo de promesas para ejecutar en paralelo
+      const promesasPorTematica = tematicas.map(async (tematica) => {
+        const documentos = await fetchApiDocumentosByTematica(tematica)
+        return documentos.map((documento) => mapApiDocumentToPdf(documento, tematica))
+      })
+
+      // Resolvemos de forma segura todas las peticiones concurrentes
+      const responses = await Promise.allSettled(promesasPorTematica)
+
+      const pdfsProcesados = responses.flatMap((response) =>
+        response.status === 'fulfilled' ? response.value : []
+      )
+    
+      const errors = responses
+        .map((response, index) => {
+          if (response.status === 'fulfilled') return null
+          const category = mapCategoryFromApi(tematicas[index])
+          return {
+            category,
+            message: response.reason?.message || 'No fue posible consultar la temática',
+          }
+        })
+        .filter(Boolean)
+    
+      /* if (pdfsProcesados.length === 0) {
+        throw new Error('La API no retornó documentos válidos en ninguna temática')
+      } */
+        
+      if (validaLoggerLocalStorage('logger')) {
+        console.log("loadMapotecaPdfsFromApi - Resultados", { tematicas, pdfs: pdfsProcesados, errors })
+      }
+
+      return {
+        pdfs: pdfsProcesados,
+        errors,
+        usingFallback: false,
+        source: 'api',
+      }
+      
+    } catch (error) {
+      console.error('Error al cargar PDFs desde la API:', error)
+      // Retornamos un objeto de falla controlado para que la app decida si aplicar fallback local
+      return {
+        pdfs: [],
+        errors: [error.message],
+        usingFallback: true,
+        source: 'legacy-directories'
+      }
+    }
+  }
+
+  // Efecto único de inicialización de datos
   useEffect(() => {
-    let mounted = true
+    let isMounted = true
 
-    async function load() {
+    async function initializeMapoteca() {
       setLoading(true)
-
-      const result = await loadMapotecaPdfs()
-
-      if (!mounted) return
-
-      setPdfs(result.pdfs)
-      setUsingFallback(result.usingFallback)
-      setDataSource(result.source || 'legacy-directories')
-      setLoading(false)
+      const result = await loadMapotecaPdfsFromApi()
+      
+      if (isMounted && result) {
+        setPdfs(result.pdfs)
+        setUsingFallback(result.usingFallback)
+        setDataSource(result.source || 'legacy-directories')
+        setLoading(false)
+      }
     }
 
-    load()
+    initializeMapoteca()
 
     return () => {
-      mounted = false
+      isMounted = false
     }
   }, [])
 
-  /**
-   * Determina categorías disponibles a partir de los PDFs cargados, para soporte de temáticas dinámicas desde la API. Si no se detectan
-   * categorías dinámicas, se usan las categorías estáticas definidas localmente.
-   *
-   * @returns {Array<{ id: string, label: string, shortLabel: string, description: string, icon: string }>} Categorias disponibles para filtros y navegación.
-   */
   const availableCategories = useMemo(() => {
     const dynamicCategories = deriveCategoriesFromPdfs(pdfs)
     return dynamicCategories.length > 0 ? dynamicCategories : categories
@@ -113,11 +183,9 @@ export default function Mapoteca() {
 
   const totals = useMemo(() => {
     const totalValues = { all: pdfs.length }
-
     availableCategories.forEach((category) => {
       totalValues[category.id] = pdfs.filter((pdf) => pdf.categoryId === category.id).length
     })
-
     return totalValues
   }, [pdfs, availableCategories])
 
@@ -137,12 +205,11 @@ export default function Mapoteca() {
       .filter((pdf) => filters.format === 'all' || pdf.format === filters.format)
       .filter((pdf) => {
         if (!search) return true
-
         return (
-          pdf.title.toLowerCase().includes(search) ||
-          pdf.fileName.toLowerCase().includes(search) ||
-          pdf.categoryLabel.toLowerCase().includes(search) ||
-          pdf.municipio.toLowerCase().includes(search)
+          pdf.title?.toLowerCase().includes(search) ||
+          pdf.fileName?.toLowerCase().includes(search) ||
+          pdf.categoryLabel?.toLowerCase().includes(search) ||
+          pdf.municipio?.toLowerCase().includes(search)
         )
       })
       .sort((a, b) => a.title.localeCompare(b.title))
@@ -153,11 +220,6 @@ export default function Mapoteca() {
       ? { label: 'Todas las categorías', description: 'Consulta consolidada de la mapoteca.' }
       : availableCategories.find((category) => category.id === activeCategory) ||
         getCategoryById(activeCategory)
-
-  const sourceMessage =
-    dataSource === 'api'
-      ? 'Conectado a la API de Mapoteca (temáticas y documentos en línea).'
-      : 'Modo local/offline: lectura de carpetas de la mapoteca.'
 
   const clearFilters = () => {
     setQuery('')
@@ -179,9 +241,7 @@ export default function Mapoteca() {
         <div className="mapoteca-banner-content">
           <p className="section-kicker">Catálogo cartográfico</p>
           <h1>Mapoteca</h1>
-          <p>
-            Catálogo de mapas, documentos y publicaciones del territorio quindiano.
-          </p>
+          <p>Catálogo de mapas, documentos y publicaciones del territorio quindiano.</p>
         </div>
         <div className="banner-plants"></div>
       </section>
@@ -199,14 +259,6 @@ export default function Mapoteca() {
           onClear={clearFilters}
         />
 
-        {/* <div className="cors-warning" style={{ marginBottom: usingFallback ? 12 : 20 }}>
-          <AlertTriangle size={20} />
-          <div>
-            <strong>Fuente de datos actual</strong>
-            <p>{sourceMessage}</p>
-          </div>
-        </div> */}
-
         {usingFallback && (
           <div className="cors-warning">
             <AlertTriangle size={20} />
@@ -214,8 +266,7 @@ export default function Mapoteca() {
               <strong>Modo demo activado</strong>
               <p>
                 No fue posible leer todas las carpetas desde el navegador local. Se muestran
-                PDFs de ejemplo y los PDFs que enviaste de Industria y Comercio. En el mismo
-                dominio del servidor, la lectura del explorador de archivos debería funcionar.
+                PDFs de ejemplo y los PDFs que enviaste de Industria y Comercio.
               </p>
             </div>
           </div>
