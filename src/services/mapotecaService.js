@@ -139,13 +139,40 @@ function buildPdfUrl(fileName, publicFolderUrl) {
 }
 
 /**
- * Construye URL de descarga segun endpoint de API.
+ * Construye URL de descarga segun endpoint de API de forma segura.
+ * Soporta rutas absolutas (http/https) o relativas (/api/v1...) en Docker.
  *
  * @param {string} documentId Identificador del documento.
  * @returns {string} URL absoluta del endpoint de descarga.
  */
 function buildDocumentDownloadUrl(documentId) {
-  return new URL(`documentos/${encodeURIComponent(documentId)}/descargar`, `${MAPOTECA_API_BASE}/`).href
+  const relativePath = `documentos/${encodeURIComponent(documentId)}/descargar`
+  
+  if (!MAPOTECA_API_BASE) {
+    console.error("[mapotecaService] ERROR: MAPOTECA_API_BASE no está configurada.");
+    return '#'
+  }
+
+  try {
+    // Intentamos construirla asumiendo que MAPOTECA_API_BASE ya podría ser absoluta
+    // Si MAPOTECA_API_BASE es relativa (ej: '/api/v1'), fallará y pasará al bloque catch
+    return new URL(relativePath, `${MAPOTECA_API_BASE}/`).href
+  } catch (err) {
+    try {
+      // Solución para Docker/Rutas relativas: Si falló, combinamos la ruta relativa de la API 
+      // usando el origen del navegador actual (window.location.origin) como la base raíz absoluta.
+      const baseAbsoluta = new URL(`${MAPOTECA_API_BASE}/`, window.location.origin).href
+      const urlFinal = new URL(relativePath, baseAbsoluta).href
+      
+      if (validaLoggerLocalStorage('logger')) {
+        console.log("[mapotecaService] buildDocumentDownloadUrl (Ruta Relativa Docker)", { documentId, urlFinal })
+      }
+      return urlFinal
+    } catch (fallbackErr) {
+      console.error("[mapotecaService] Fallo crítico construyendo la URL de descarga:", fallbackErr)
+      return '#'
+    }
+  }
 }
 
 /**
@@ -180,7 +207,7 @@ function categoryIdFromLabel(label) {
  * @param {string} label Etiqueta de tematica.
  * @returns {{ id: string, label: string }} Categoria utilizable en la UI.
  */
-export function mapCategoryFromApi(label) {
+function mapCategoryFromApi(label) {
   const normalized = normalizeText(label)
   const localMatch = categories.find((category) => normalizeText(category.label) === normalized)
   if (validaLoggerLocalStorage('logger')) console.log("mapCategoryFromApi",{ label, normalized, localMatch })
@@ -217,7 +244,7 @@ function hasInternetConnection() {
  * @param {unknown} payload Respuesta JSON de API.
  * @returns {any[]} Arreglo de documentos.
  */
-export function extractDocuments(payload) {
+function extractDocuments(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.content)) return payload.content
   if (Array.isArray(payload?.data)) return payload.data
@@ -271,7 +298,7 @@ function normalizeTematicas(values) {
  *
  * @returns {Promise<string[]>} Etiquetas de tematicas.
  */
-export async function fetchApiTematicas() {
+async function fetchApiTematicas() {
   const response = await fetch(`${MAPOTECA_API_BASE}/tematicas`, {
     method: 'GET',
     headers: {
@@ -329,14 +356,21 @@ export async function fetchApiTematicas() {
  * @param {string} tematica Nombre de la tematica.
  * @returns {Promise<any[]>} Documentos retornados por API.
  */
-export async function fetchApiDocumentosByTematica(tematica) {
-  const endpoint = new URL(`${MAPOTECA_API_BASE}/documentos`)
+async function fetchApiDocumentosByTematica(tematica) {
+  let endpoint;
+  try {
+    // Si MAPOTECA_API_BASE es relativa (ej. /api/v1), usamos el origen actual del navegador como raíz absoluta
+    endpoint = new URL(`${MAPOTECA_API_BASE}/documentos`, window.location.origin);
+  } catch (e) {
+    endpoint = new URL(`${MAPOTECA_API_BASE}/documentos`);
+  }
   endpoint.searchParams.set('tematica', tematica)
   endpoint.searchParams.set('page', '1')
   endpoint.searchParams.set('size', '100')
   endpoint.searchParams.set('sort', 'titulo')
   endpoint.searchParams.set('direction', 'asc')
   if (validaLoggerLocalStorage('logger')) console.log("[mapoteca] fetchApiDocumentosByTematica endpoint", { tematica, url: endpoint.href, urlFetch:`${MAPOTECA_API_BASE}/documentos?tematica=${encodeURIComponent(tematica)}&page=1&size=100&sort=titulo&direction=asc` })
+  
   const response = await fetch(endpoint.href, {
     method: 'GET',
     headers: {
@@ -351,7 +385,9 @@ export async function fetchApiDocumentosByTematica(tematica) {
   }
 
   const payload = await response.json()
-  return extractDocuments(payload)
+  const documentsExtract = extractDocuments(payload)
+  if (validaLoggerLocalStorage('logger')) console.log("[mapoteca] fetchApiDocumentosByTematica payload", { payload, documentsExtract })
+  return documentsExtract
 }
 
 /**
@@ -397,12 +433,13 @@ export function mapApiDocumentToPdf(apiDocument, tematica) {
  *
  * @returns {Promise<MapotecaLoadResult>} Resultado de carga por API.
  */
-export async function loadMapotecaPdfsFromApi() {
+async function loadMapotecaPdfsFromApi() {
 
   const tematicas = await fetchApiTematicas()
   if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi333",{ tematicas })
   if (tematicas.length === 0) {
-    console.error('La API no retorno tematicas')
+    console.warn('La API no retornó temáticas válidas');
+    return { pdfs: [], errors: [{ message: 'La API no retornó temáticas' }], usingFallback: true, source: 'fallback-data' }
   }
   const responses = await Promise.allSettled(
     tematicas.map(async (tematica) => {
@@ -411,8 +448,9 @@ export async function loadMapotecaPdfsFromApi() {
     }),
   )
 
+  // Extraemos únicamente los resultados de las promesas resueltas con éxito
   const pdfs = responses.flatMap((response) =>
-    response.status === 'fulfilled' ? response.value : [],
+    response.status === 'fulfilled' ? response.value : []
   )
 
   const errors = responses
@@ -428,8 +466,9 @@ export async function loadMapotecaPdfsFromApi() {
     })
     .filter(Boolean)
 
+  // Si se lograron rescatar PDFs a pesar de fallos en ciertas temáticas, evitamos activar el fallback total
   if (pdfs.length === 0) {
-    throw new Error('La API no retorno documentos')
+    throw new Error('La API no retornó ningún documento válido en las temáticas consultadas')
   }
     
   if (validaLoggerLocalStorage('logger')) console.log("loadMapotecaPdfsFromApi4444",{ tematicas, responses, pdfs, errors })
@@ -515,7 +554,7 @@ export async function loadMapotecaPdfs() {
       })
     }
   // }
-/* 
+
   const responses = await Promise.allSettled(
     categories.map(async (category) => {
       const pdfs = await loadPdfsFromDirectory(category)
@@ -555,5 +594,5 @@ export async function loadMapotecaPdfs() {
     errors,
     usingFallback: false,
     source: 'legacy-directories',
-  } */
+  }
 }
