@@ -4,6 +4,7 @@ import MapotecaSidebar from '../components/mapoteca/MapotecaSidebar.jsx'
 import MapotecaFilters from '../components/mapoteca/MapotecaFilters.jsx'
 import PdfCard from '../components/mapoteca/PdfCard.jsx'
 import PdfViewerModal from '../components/mapoteca/PdfViewerModal.jsx'
+import HeaderComponent from '../components/layout/headerComponent.jsx'
 import { categories, getCategoryById } from '../data/categories.js'
 import { loadMapotecaPdfs } from '../services/mapotecaService.js'
 import { validaLoggerLocalStorage } from '../utils/utilities.js'
@@ -162,14 +163,11 @@ export default function Mapoteca() {
 
   return (
     <main>
-      <section className="mapoteca-banner">
-        <div className="mapoteca-banner-content">
-          <p className="section-kicker">Catálogo cartográfico</p>
+      <HeaderComponent>
+          <p>Catálogo cartográfico</p>
           <h1>Mapoteca</h1>
           <p>Catálogo de mapas, documentos y publicaciones del territorio quindiano.</p>
-        </div>
-        <div className="banner-plants"></div>
-      </section>
+      </HeaderComponent>
 
       <section className="mapoteca-content">
         <MapotecaFilters

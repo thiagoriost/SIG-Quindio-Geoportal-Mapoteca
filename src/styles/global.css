@@ -155,11 +155,11 @@ a {
 }
 
 .home-hero {
-  min-height: 560px;
+  min-height: 410px;
   position: relative;
   display: flex;
   align-items: center;
-  padding: 72px 5vw;
+  padding: 75px 5vw;
   overflow: hidden;
   background:
     /* linear-gradient(90deg, rgba(7, 36, 18, 0.82) 0%, rgba(13, 64, 30, 0.5) 42%, rgba(255, 255, 255, 0.08) 100%), */
@@ -218,24 +218,24 @@ a {
 }
 
 .home-hero h1 {
-  margin: 0 0 18px;
+  /* margin: 0 0 18px; */
   max-width: 700px;
   font-size: clamp(2.7rem, 5vw, 5.3rem);
-  line-height: 1.05;
+  /* line-height: 1.05; */
   letter-spacing: -0.055em;
 }
 
 .home-hero p {
   max-width: 620px;
   font-size: 1.15rem;
-  line-height: 1.62;
+  /* line-height: 1.62; */
 }
 
 .hero-action-cards {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 34px;
+  /* margin-top: 57px; */
 }
 
 .hero-action {
@@ -390,7 +390,7 @@ a {
 }
 
 .institution-logo {
-  min-height: 120px;
+  /* min-height: 120px; */
   display: grid;
   place-items: center;
   padding: 14px 18px;
@@ -413,10 +413,10 @@ a {
 
 .mapoteca-banner {
   position: relative;
-  min-height: 290px;
+  min-height: 376px;
   display: flex;
   align-items: center;
-  padding: 54px 5vw;
+  padding: 72px 5vw;
   overflow: hidden;
   background-image:
     linear-gradient(90deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
@@ -977,9 +977,9 @@ a {
     height: 52px;
   }
 
-  .home-hero {
+/*   .home-hero {
     min-height: 620px;
-  }
+  } */
 
   .hero-action-cards,
   .search-row,

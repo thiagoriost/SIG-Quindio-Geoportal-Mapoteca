@@ -1,6 +1,7 @@
 import { BarChart3, CloudDownload, FileText, Globe2, MapPinned } from 'lucide-react'
 import HeroActions from '../components/home/HeroActions.jsx'
 import ToolCard from '../components/home/ToolCard.jsx'
+import HeaderComponent from '../components/layout/headerComponent.jsx'
 import escudoQuindio from '../assets/images/escudoQuindio.jpg'
 import logoCRQ from '../assets/images/logoCRQ2.jpg'
 import logoIgac from '../assets/images/IGAC_LOGO.png'
@@ -9,28 +10,15 @@ import { ADMIN_URL } from '../utils/urls.js'
 export default function Home({ onNavigate }) {
   return (
     <main>
-      <section className="home-hero">
-        <div className="hero-bg-decoration coffee"></div>
-        <div className="hero-bg-decoration leaves"></div>
-
-        <div className="home-hero-content">
-          {/* <p className="section-kicker">Geoportal departamental</p> */}
-          <h1>Sistema de Información Geográfica del Quindío</h1>
+      <HeaderComponent>
+          <p>Sistema de Información Geográfica del Quindío</p>
           <p>
             Información territorial para la planificación, gestión y desarrollo
             sostenible del departamento.
           </p>
 
           <HeroActions onNavigate={onNavigate} />
-        </div>
-
-        {/* <div className="slider-dots">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div> */}
-      </section>
+      </HeaderComponent>
 
       <section className="content-section">
         <div className="section-heading">
